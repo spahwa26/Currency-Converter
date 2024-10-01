@@ -10,18 +10,18 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.ripple
@@ -65,27 +65,36 @@ fun ConverterScreen(
     val state = mainViewModel.converterUiState.value
     val currencyList by mainViewModel.convertedCurrenciesList.collectAsState()
     val baseCurrency by sharedViewModel.baseCurrency.collectAsState()
+    val updateCurrencyList by sharedViewModel.updateCurrencyList.collectAsState()
     val amount by mainViewModel.amountText.collectAsState()
     var itemWidth by remember { mutableStateOf(0.dp) }
 
-    if (baseCurrency.isNotBlank()) {
-        mainViewModel.baseCurrency = baseCurrency
+    baseCurrency?.let {
+        mainViewModel.baseCurrency = it
+        sharedViewModel.currencyUpdated()
         mainViewModel.updateAmount()
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
+    if(updateCurrencyList)
+    {
+        sharedViewModel.currencyListUpdated()
+        mainViewModel.updateLists()
+    }
+
+    Box(modifier = modifier.fillMaxSize()) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Bottom,
+            modifier = Modifier.imePadding()
         ) {
 
             Box {
                 TextField(
                     value = amount,
                     onValueChange = {
-                        if (it.contains(" ") || it.contains("-"))
+                        if (!mainViewModel.validateAmount(it))
                             return@TextField
-                        if (it.isNotBlank() && it.toDouble() != 0.0)
+                        if (it.isNotBlank() && it!="." && it.toDouble() != 0.0)
                             mainViewModel.updateAmount(it)
                         else mainViewModel.updateAmount("")
                     },
@@ -94,7 +103,10 @@ fun ConverterScreen(
                         .padding(horizontal = 10.dp, vertical = 5.dp),
                     colors = TextFieldDefaults.colors(
                         focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
+                        unfocusedIndicatorColor = Color.Transparent,
+                        focusedContainerColor = getColors().surface,
+                        unfocusedContainerColor = getColors().surface,
+                        focusedTextColor = getColors().onTertiary
                     ),
                     shape = CircleShape,
                     maxLines = 1,
@@ -117,7 +129,7 @@ fun ConverterScreen(
                         }
                 ) {
                     Text(
-                        text = baseCurrency,
+                        text = mainViewModel.baseCurrency,
                         fontSize = 16.sp,
                         modifier = Modifier
                             .padding(horizontal = 10.dp, vertical = 15.dp),
@@ -130,6 +142,13 @@ fun ConverterScreen(
                 }
             }
 
+            OutlinedButton(
+                onClick = {
+                    navController.navigate(SelectCurrencies(true))
+                }
+            ) {
+                Text("Select custom currencies")
+            }
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
@@ -178,17 +197,11 @@ fun ConverterScreen(
                     }
                 }
             }
-
-            Button(
-                onClick = {
-                    navController.navigate(SelectCurrencies(true))
-                }
-            ) {
-                Text("Select custom currencies")
-            }
         }
         if (state is ConverterViewmodel.ConverterUiState.Loading) {
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier
+                .fillMaxSize()
+                .align(Alignment.Center)) {
                 CircularProgressIndicator(
                     modifier = Modifier
                         .align(Alignment.Center)

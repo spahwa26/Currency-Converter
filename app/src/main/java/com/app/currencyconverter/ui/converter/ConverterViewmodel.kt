@@ -5,7 +5,6 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.app.currencyconverter.data.localdb.preferences.CurrencyPreferences.Companion.USD
 import com.app.currencyconverter.data.models.CurrenciesData
 import com.app.currencyconverter.data.models.CurrencyInfo
 import com.app.currencyconverter.data.models.CurrencyToShow
@@ -87,12 +86,10 @@ class ConverterViewmodel @Inject constructor(
         }
     }
 
-    private fun updateLists(callAPI: Boolean = false) {
+    fun updateLists(callAPI: Boolean = false) {
         viewModelScope.launch {
             withContext(IO) {
-                currencyList = localRepository.getCurrencyList().sortedBy {
-                    it.code
-                }
+                currencyList = localRepository.getShowCurrenciesList()
                 currencyRates = localRepository.getCurrencyRates()
                 if ((currencyList.isNullOrEmpty() || currencyRates == null) && callAPI)
                     callConverterAPI()
@@ -103,11 +100,15 @@ class ConverterViewmodel @Inject constructor(
         }
     }
 
+    fun validateAmount(input: String): Boolean {
+        val regex = Regex("^\\d*\\.?\\d{0,2}$")
+        return regex.matches(input) || input.isEmpty()
+    }
+
 
     sealed class ConverterUiState {
         data object Loading : ConverterUiState()
         data object Success : ConverterUiState()
         data class Error(val e: String?) : ConverterUiState()
-        data object NoData : ConverterUiState()
     }
 }

@@ -3,12 +3,15 @@ package com.app.currencyconverter.ui.selectcurrencies
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -16,14 +19,23 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,12 +64,21 @@ fun SelectCurrenciesScreen(
     navController: NavController
 ) {
 
-    val currencyList by sharedViewModel.currenciesList.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarMessage by sharedViewModel.snackbarMessage.collectAsState()
     val searchQuery by sharedViewModel.searchQuery.collectAsState()
     var itemWidth by remember { mutableStateOf(0.dp) }
-    Box(contentAlignment = Alignment.Center) {
+    if (sharedViewModel.canPopBack.value) {
+        sharedViewModel.poppedBack()
+        navController.popBackStack()
+    }
+    Box(
+        contentAlignment = Alignment.Center, modifier = modifier
+            .fillMaxSize()
+            .imePadding()
+    ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier
+            horizontalAlignment = Alignment.End, modifier = Modifier
                 .fillMaxSize()
         ) {
 
@@ -69,7 +90,10 @@ fun SelectCurrenciesScreen(
                     .padding(horizontal = 10.dp, vertical = 5.dp),
                 colors = TextFieldDefaults.colors(
                     focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
+                    unfocusedIndicatorColor = Color.Transparent,
+                    focusedContainerColor = getColors().surface,
+                    unfocusedContainerColor = getColors().surface,
+                    focusedTextColor = getColors().onTertiary
                 ),
                 shape = CircleShape,
                 maxLines = 1,
@@ -80,13 +104,23 @@ fun SelectCurrenciesScreen(
                 placeholder = { Text(text = "Search currency here") }
             )
 
+            if (args.isMultipleSelection) Row(horizontalArrangement = Arrangement.Absolute.Right) {
+                TextButton(onClick = { sharedViewModel.updateSelection(true) }) {
+                    Text(text = "Select All")
+                }
+
+                TextButton(onClick = { sharedViewModel.updateSelection(false) }) {
+                    Text(text = "Unselect All")
+                }
+            }
+
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
                 contentPadding = PaddingValues(5.dp),
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.weight(1f)
             ) {
-                itemsIndexed(currencyList, key = { _, info ->
+                itemsIndexed(sharedViewModel.currenciesListState, key = { _, info ->
                     info.code + info.countryName
                 }) { index, info ->
                     Card(
@@ -108,8 +142,12 @@ fun SelectCurrenciesScreen(
                                     indication = ripple(radius = 30.dp),
                                     interactionSource = remember { MutableInteractionSource() }
                                 ) {
-                                    sharedViewModel.onBaseCurrencyChanged(info.code)
-                                    navController.popBackStack()
+                                    if (args.isMultipleSelection)
+                                        sharedViewModel.updateSelection(!info.isSelected, index)
+                                    else {
+                                        sharedViewModel.onBaseCurrencyChanged(info.code)
+                                        navController.popBackStack()
+                                    }
                                 }
                         ) {
                             Text(
@@ -129,9 +167,11 @@ fun SelectCurrenciesScreen(
                                     .padding(top = 15.dp, end = 15.dp)
                             ) { // Set desired size
                                 Checkbox(
-                                    checked = false,
-                                    onCheckedChange = { },
-                                    modifier = Modifier.size(20.dp) // Reduce size of checkbox
+                                    checked = info.isSelected,
+                                    onCheckedChange = {
+                                        sharedViewModel.updateSelection(it, index)
+                                    },
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                         }
@@ -140,6 +180,38 @@ fun SelectCurrenciesScreen(
             }
         }
 
+        if (args.isMultipleSelection) FloatingActionButton(
+            onClick = {
+                sharedViewModel.updateDB()
+            },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp), // Padding to position it away from edges
+            containerColor = getColors().primary, // Optional: Change the background color
+            contentColor = getColors().background   // Optional: Change the icon color
+        ) {
+            Icon(Icons.Default.Done, contentDescription = null)
+        }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) { snackbarData ->
+            Snackbar {
+                Text(snackbarData.visuals.message)
+            }
+        }
+
+    }
+
+    LaunchedEffect(snackbarMessage) {
+        snackbarMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            sharedViewModel.snackbarShown()
+        }
+    }
+    LaunchedEffect(Unit) {
+        sharedViewModel.getListFromDb()
     }
 }
 

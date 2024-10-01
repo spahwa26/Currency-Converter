@@ -22,22 +22,23 @@ class RemoteRepository @Inject constructor(
             CoroutineScope(IO).launch {
                 val infoRes = apiRequest { client.getCurrencyInfo() }
                 when (infoRes) {
-                    is ResultWrapper.Success ->{
+                    is ResultWrapper.Success -> {
                         val dataRes = apiRequest { client.getCurrencyData() }
-                        when(dataRes){
+                        when (dataRes) {
                             is ResultWrapper.Success -> {
-                                dataRes.data.id=0
                                 database.currencyDao().insertUpdateCurrenciesRates(dataRes.data)
-                                database.currencyDao().insertUpdateCurrenciesInfo(infoRes.data.map {
+                                database.currencyDao().insertCurrenciesInfo(infoRes.data.map {
                                     CurrencyInfo(it.key, it.value)
                                 })
                                 coroutine.resume(ResultWrapper.Success(Unit))
                             }
+
                             is ResultWrapper.Error -> {
                                 coroutine.resume(ResultWrapper.Error(dataRes.exception))
                             }
                         }
                     }
+
                     is ResultWrapper.Error -> {
                         coroutine.resume(ResultWrapper.Error(infoRes.exception))
                     }
