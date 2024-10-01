@@ -17,30 +17,35 @@ class RemoteRepository @Inject constructor(
     private val database: CurrenciesDatabase
 ) : SafeApiRequest() {
 
-    suspend fun updateCurrencyData(): ResultWrapper<Unit> =
+    suspend fun updateCurrencyData(callCurrencyNamesApi: Boolean = true): ResultWrapper<Unit> =
         suspendCoroutine { coroutine ->
             CoroutineScope(IO).launch {
-                val infoRes = apiRequest { client.getCurrencyInfo() }
-                when (infoRes) {
+                val ratesRes = apiRequest { client.getCurrencyData() }
+                when (ratesRes) {
                     is ResultWrapper.Success -> {
-                        val dataRes = apiRequest { client.getCurrencyData() }
-                        when (dataRes) {
-                            is ResultWrapper.Success -> {
-                                database.currencyDao().insertUpdateCurrenciesRates(dataRes.data)
-                                database.currencyDao().insertCurrenciesInfo(infoRes.data.map {
-                                    CurrencyInfo(it.key, it.value)
-                                })
-                                coroutine.resume(ResultWrapper.Success(Unit))
-                            }
+                        if(callCurrencyNamesApi) {
+                            val dataRes = apiRequest { client.getCurrencyInfo() }
+                            when (dataRes) {
+                                is ResultWrapper.Success -> {
+                                    database.currencyDao().insertCurrenciesRates(ratesRes.data)
+                                    database.currencyDao().insertCurrenciesInfo(dataRes.data.map {
+                                        CurrencyInfo(it.key, it.value)
+                                    })
+                                    coroutine.resume(ResultWrapper.Success(Unit))
+                                }
 
-                            is ResultWrapper.Error -> {
-                                coroutine.resume(ResultWrapper.Error(dataRes.exception))
+                                is ResultWrapper.Error -> {
+                                    coroutine.resume(ResultWrapper.Error(dataRes.exception))
+                                }
                             }
+                        }else{
+                            database.currencyDao().insertCurrenciesRates(ratesRes.data)
+                            coroutine.resume(ResultWrapper.Success(Unit))
                         }
                     }
 
                     is ResultWrapper.Error -> {
-                        coroutine.resume(ResultWrapper.Error(infoRes.exception))
+                        coroutine.resume(ResultWrapper.Error(ratesRes.exception))
                     }
                 }
             }

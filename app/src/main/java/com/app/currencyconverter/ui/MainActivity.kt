@@ -13,16 +13,25 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import com.app.currencyconverter.data.network.CurrencyUpdateWorker
 import com.app.currencyconverter.ui.converter.Converter
 import com.app.currencyconverter.ui.converter.ConverterScreen
 import com.app.currencyconverter.ui.selectcurrencies.SelectCurrencies
 import com.app.currencyconverter.ui.selectcurrencies.SelectCurrenciesScreen
 import com.app.currencyconverter.ui.selectcurrencies.SharedViewModel
 import com.app.currencyconverter.ui.theme.CurrencyConverterTheme
+import com.app.currencyconverter.utils.Constants.CURRENCY_WORKER
 import dagger.hilt.android.AndroidEntryPoint
+import java.util.concurrent.TimeUnit
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -42,8 +51,8 @@ class MainActivity : ComponentActivity() {
                                 sharedViewModel = viewmodel
                             )
                         }
-                        composable<SelectCurrencies> {backStackEntry ->
-                            val selectCurrencies : SelectCurrencies = backStackEntry.toRoute()
+                        composable<SelectCurrencies> { backStackEntry ->
+                            val selectCurrencies: SelectCurrencies = backStackEntry.toRoute()
                             SelectCurrenciesScreen(
                                 modifier = Modifier.padding(innerPadding),
                                 sharedViewModel = viewmodel,
@@ -56,5 +65,24 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+        scheduleHourlyWork()
+    }
+
+
+    private fun scheduleHourlyWork() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val request = PeriodicWorkRequestBuilder<CurrencyUpdateWorker>(
+            1, TimeUnit.HOURS
+        ).setConstraints(constraints).build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            CURRENCY_WORKER,
+            ExistingPeriodicWorkPolicy.UPDATE,
+            request
+        )
     }
 }

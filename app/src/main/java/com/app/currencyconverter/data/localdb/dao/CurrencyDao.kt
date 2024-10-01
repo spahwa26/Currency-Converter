@@ -12,10 +12,16 @@ import com.app.currencyconverter.data.models.CurrencyInfo
 interface CurrencyDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertUpdateCurrenciesRates(ratesData: CurrenciesData)
+    suspend fun insertCurrenciesRates(ratesData: CurrenciesData)
 
     @Query("SELECT * FROM CurrenciesData WHERE row_id = 0 LIMIT 1")
     suspend fun getCurrencyRates(): CurrenciesData?
+
+    @Query("SELECT update_count FROM CurrenciesData WHERE row_id = 0 LIMIT 1")
+    suspend fun getUpdatesCount(): Int?
+
+    @Query("UPDATE CurrenciesData SET update_count = :count WHERE row_id = 0")
+    suspend fun updateCountInRatesTable(count: Int): Int?
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertCurrenciesInfo(currencyInfo: List<CurrencyInfo>)
