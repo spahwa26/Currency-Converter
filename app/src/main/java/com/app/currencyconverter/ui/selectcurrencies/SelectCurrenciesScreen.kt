@@ -45,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -52,6 +53,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.app.currencyconverter.R
 import com.app.currencyconverter.utils.getColors
 import kotlinx.serialization.Serializable
 
@@ -65,7 +67,8 @@ fun SelectCurrenciesScreen(
 ) {
 
     val snackbarHostState = remember { SnackbarHostState() }
-    val snackbarMessage by sharedViewModel.snackbarMessage.collectAsState()
+    val snackbarMessage = sharedViewModel.snackbarMessage.value
+    val message = snackbarMessage?.let { stringResource(id = it) }
     val searchQuery by sharedViewModel.searchQuery.collectAsState()
     var itemWidth by remember { mutableStateOf(0.dp) }
     if (sharedViewModel.canPopBack.value) {
@@ -74,6 +77,7 @@ fun SelectCurrenciesScreen(
     }
     Box(
         contentAlignment = Alignment.Center, modifier = modifier
+            .padding(top = 5.dp)
             .fillMaxSize()
             .imePadding()
     ) {
@@ -101,16 +105,16 @@ fun SelectCurrenciesScreen(
                     keyboardType = KeyboardType.Text,
                     imeAction = ImeAction.Done
                 ),
-                placeholder = { Text(text = "Search currency here") }
+                placeholder = { Text(text = stringResource(id = R.string.search_currencies_here)) }
             )
 
             if (args.isMultipleSelection) Row(horizontalArrangement = Arrangement.Absolute.Right) {
                 TextButton(onClick = { sharedViewModel.updateSelection(true) }) {
-                    Text(text = "Select All")
+                    Text(text = stringResource(id = R.string.select_all))
                 }
 
                 TextButton(onClick = { sharedViewModel.updateSelection(false) }) {
-                    Text(text = "Unselect All")
+                    Text(text = stringResource(id = R.string.unselect_all))
                 }
             }
 
@@ -204,8 +208,8 @@ fun SelectCurrenciesScreen(
 
     }
 
-    LaunchedEffect(snackbarMessage) {
-        snackbarMessage?.let { message ->
+    LaunchedEffect(message) {
+        message?.let {
             snackbarHostState.showSnackbar(message)
             sharedViewModel.snackbarShown()
         }

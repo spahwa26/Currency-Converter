@@ -26,6 +26,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,6 +38,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -47,8 +50,12 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.app.currencyconverter.R
+import com.app.currencyconverter.ui.composables.CommonAlertDialog
 import com.app.currencyconverter.ui.selectcurrencies.SelectCurrencies
 import com.app.currencyconverter.ui.selectcurrencies.SharedViewModel
+import com.app.currencyconverter.utils.Constants.EMPTY_STRING
+import com.app.currencyconverter.utils.finishActivity
 import com.app.currencyconverter.utils.formatAmountWithCommas
 import com.app.currencyconverter.utils.getColors
 import kotlinx.serialization.Serializable
@@ -67,6 +74,7 @@ fun ConverterScreen(
     val baseCurrency by sharedViewModel.baseCurrency.collectAsState()
     val updateCurrencyList by sharedViewModel.updateCurrencyList.collectAsState()
     val amount by mainViewModel.amountText.collectAsState()
+    val context = LocalContext.current
     var itemWidth by remember { mutableStateOf(0.dp) }
 
     baseCurrency?.let {
@@ -75,8 +83,7 @@ fun ConverterScreen(
         mainViewModel.updateAmount()
     }
 
-    if(updateCurrencyList)
-    {
+    if (updateCurrencyList) {
         sharedViewModel.currencyListUpdated()
         mainViewModel.updateLists()
     }
@@ -88,15 +95,15 @@ fun ConverterScreen(
             modifier = Modifier.imePadding()
         ) {
 
-            Box {
+            Box(modifier = Modifier.padding(top = 5.dp)) {
                 TextField(
                     value = amount,
                     onValueChange = {
                         if (!mainViewModel.validateAmount(it))
                             return@TextField
-                        if (it.isNotBlank() && it!="." && it.toDouble() != 0.0)
+                        if (it.isNotBlank() && it != "." && it.toDouble() != 0.0)
                             mainViewModel.updateAmount(it)
-                        else mainViewModel.updateAmount("")
+                        else mainViewModel.updateAmount(EMPTY_STRING)
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -199,9 +206,11 @@ fun ConverterScreen(
             }
         }
         if (state is ConverterViewmodel.ConverterUiState.Loading) {
-            Box(modifier = Modifier
-                .fillMaxSize()
-                .align(Alignment.Center)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .align(Alignment.Center)
+            ) {
                 CircularProgressIndicator(
                     modifier = Modifier
                         .align(Alignment.Center)
@@ -209,6 +218,26 @@ fun ConverterScreen(
             }
         }
 
+    }
+
+    if (state is ConverterViewmodel.ConverterUiState.Error) {
+        CommonAlertDialog(
+            onDismissRequest = {mainViewModel.hideAlert()},
+            onDismissClick = {
+                context.finishActivity()
+            },
+            onConfirmation = {
+                mainViewModel.hideAlert()
+                mainViewModel.updateLists(true)
+            },
+            dialogTitle = stringResource(id = R.string.error),
+            dialogText = if (state.apiError.isNullOrBlank()) stringResource(state.customError) else state.apiError,
+            confirmText = stringResource(id = R.string.try_again)
+        )
+    }
+
+    LaunchedEffect(Unit) {
+        mainViewModel.updateLists(true)
     }
 }
 

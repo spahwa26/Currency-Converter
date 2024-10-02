@@ -1,17 +1,20 @@
 package com.app.currencyconverter.ui.selectcurrencies
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.app.currencyconverter.R
 import com.app.currencyconverter.data.models.CurrencyInfo
 import com.app.currencyconverter.data.models.CurrencyToShow
 import com.app.currencyconverter.data.repository.LocalRepository
+import com.app.currencyconverter.utils.Constants.EMPTY_STRING
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -32,7 +35,7 @@ class SharedViewModel @Inject constructor(
 
     private val selectionMap = HashMap<String, Boolean?>()
 
-    private val _searchQuery = MutableStateFlow("")
+    private val _searchQuery = MutableStateFlow(EMPTY_STRING)
     val searchQuery = _searchQuery.asStateFlow()
 
     private val _baseCurrency = MutableStateFlow<String?>(null)
@@ -50,12 +53,21 @@ class SharedViewModel @Inject constructor(
 
     private var canUpdateDB = false
 
-    private val _snackbarMessage = MutableStateFlow<String?>(null)
-    val snackbarMessage: StateFlow<String?> = _snackbarMessage
+    private val _snackbarMessage = mutableStateOf<Int?>(null)
+    val snackbarMessage: State<Int?> = _snackbarMessage
 
-    private fun showSnackbar(message: String) {
+    private fun showSnackbar(@StringRes message: Int) {
         viewModelScope.launch {
             _snackbarMessage.value = message
+        }
+    }
+
+    private val isReady = mutableStateOf(false)
+
+    init {
+        viewModelScope.launch {
+            delay(900)
+            isReady.value = true
         }
     }
 
@@ -69,9 +81,7 @@ class SharedViewModel @Inject constructor(
                         selectionMap[it.code] = true
                     }
                     CurrencyToShow(
-                        code = it.code,
-                        countryName = it.countryName,
-                        isSelected = it.isSelected
+                        code = it.code, countryName = it.countryName, isSelected = it.isSelected
                     )
                 }
 
@@ -80,9 +90,7 @@ class SharedViewModel @Inject constructor(
                 canInitiateQuery = true
             }
 
-            searchQuery.debounce(600)
-                .distinctUntilChanged()
-                .filter { canInitiateQuery }
+            searchQuery.debounce(600).distinctUntilChanged().filter { canInitiateQuery }
                 .flatMapLatest { query ->
                     flow {
                         emit(searchCurrencies(query))
@@ -95,10 +103,9 @@ class SharedViewModel @Inject constructor(
 
     private fun searchCurrencies(text: String): List<CurrencyToShow> {
         return currencyListMain.mapNotNull {
-            if (it.code.contains(text, true) || it.countryName.contains(text, true))
-                it.apply {
-                    isSelected = selectionMap[it.code] == true
-                }
+            if (it.code.contains(text, true) || it.countryName.contains(text, true)) it.apply {
+                isSelected = selectionMap[it.code] == true
+            }
             else {
                 null
             }
@@ -143,7 +150,7 @@ class SharedViewModel @Inject constructor(
                     //selectionCount = 0
                     selectionMap.clear()
                 }
-                updateList(searchCurrencies(""))
+                updateList(searchCurrencies(EMPTY_STRING))
             } else {
                 val newList = currenciesListState.mapIndexed { i, item ->
                     if (i == index) {
@@ -167,19 +174,17 @@ class SharedViewModel @Inject constructor(
 
     fun updateDB() {
         viewModelScope.launch {
-            if (selectionMap.size == 0)
-                showSnackbar("Please select at-least one item")
+            if (selectionMap.size == 0) showSnackbar(R.string.please_select_one)
             else {
-                if (canUpdateDB)
-                    currenciesListState.forEach { item ->
+                if (canUpdateDB) {
+                    currencyListMain.forEach { item ->
                         localRepository.updateCurrencyInfo(
                             CurrencyInfo(
-                                item.code,
-                                item.countryName,
-                                item.isSelected
+                                item.code, item.countryName, selectionMap[item.code] == true
                             )
                         )
                     }
+                }
                 _canPopBack.value = true
                 _updateCurrencyList.value = true
             }

@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">Currency Converter</string>
+    <string name="error">Error</string>
+    <string name="no_internet_error">Internet connection not available, please enable internet and try again!</string>
+    <string name="something_went_wrong">Somrthing went wrong, please try again!</string>
+    <string name="try_again">Try Again</string>
+    <string name="search_currencies_here">Search currency here</string>
+    <string name="select_all">Select All</string>
+    <string name="unselect_all">Unselect All</string>
+    <string name="please_select_one">Please select at-least one Currency</string>
 </resources>

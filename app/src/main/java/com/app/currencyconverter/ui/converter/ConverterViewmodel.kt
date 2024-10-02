@@ -1,16 +1,22 @@
 package com.app.currencyconverter.ui.converter
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.app.currencyconverter.R
 import com.app.currencyconverter.data.models.CurrenciesData
 import com.app.currencyconverter.data.models.CurrencyInfo
 import com.app.currencyconverter.data.models.CurrencyToShow
 import com.app.currencyconverter.data.repository.LocalRepository
 import com.app.currencyconverter.data.repository.RemoteRepository
+import com.app.currencyconverter.utils.Constants.AMOUNT_REGEX
+import com.app.currencyconverter.utils.Constants.EMPTY_STRING
+import com.app.currencyconverter.utils.NoInternetException
 import com.app.currencyconverter.utils.ResultWrapper
+import com.app.currencyconverter.utils.SomethingWentWrongException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,10 +32,13 @@ class ConverterViewmodel @Inject constructor(
 ) :
     ViewModel() {
 
+
+    private val regex = Regex(AMOUNT_REGEX)
+
     private val _converterUiState: MutableState<ConverterUiState?> = mutableStateOf(null)
     val converterUiState: State<ConverterUiState?> = _converterUiState
 
-    private val _amountText = MutableStateFlow("")
+    private val _amountText = MutableStateFlow(EMPTY_STRING)
     val amountText = _amountText.asStateFlow()
 
     var baseCurrency: String = localRepository.getBaseCurrency()
@@ -39,10 +48,6 @@ class ConverterViewmodel @Inject constructor(
     private var currencyRates: CurrenciesData? = null
 
     val convertedCurrenciesList = MutableStateFlow<List<CurrencyToShow>>(emptyList())
-
-    init {
-        updateLists(true)
-    }
 
     fun updateAmount(sAmount: String = amountText.value) {
         _amountText.value = sAmount
@@ -75,15 +80,26 @@ class ConverterViewmodel @Inject constructor(
                 is ResultWrapper.Success -> {
                     _converterUiState.value = ConverterUiState.Success
                     updateLists()
-                    //updateAmount("2000")
                 }
 
                 is ResultWrapper.Error -> {
                     _converterUiState.value =
-                        ConverterUiState.Error(res.exception.localizedMessage)
+                        when (res.exception) {
+                            is NoInternetException -> ConverterUiState.Error(customError = R.string.no_internet_error)
+                            is SomethingWentWrongException -> ConverterUiState.Error(customError = R.string.something_went_wrong)
+                            else -> ConverterUiState.Error(
+                                res.exception.localizedMessage ?: EMPTY_STRING,
+                                R.string.something_went_wrong
+                            )
+                        }
+
                 }
             }
         }
+    }
+
+    fun hideAlert() {
+        _converterUiState.value = ConverterUiState.Nothing
     }
 
     fun updateLists(callAPI: Boolean = false) {
@@ -94,14 +110,13 @@ class ConverterViewmodel @Inject constructor(
                 if ((currencyList.isNullOrEmpty() || currencyRates == null) && callAPI)
                     callConverterAPI()
                 else {
-                    updateAmount("")
+                    updateAmount(EMPTY_STRING)
                 }
             }
         }
     }
 
     fun validateAmount(input: String): Boolean {
-        val regex = Regex("^\\d*\\.?\\d{0,2}$")
         return regex.matches(input) || input.isEmpty()
     }
 
@@ -109,6 +124,9 @@ class ConverterViewmodel @Inject constructor(
     sealed class ConverterUiState {
         data object Loading : ConverterUiState()
         data object Success : ConverterUiState()
-        data class Error(val e: String?) : ConverterUiState()
+        data class Error(val apiError: String? = null, @StringRes val customError: Int) :
+            ConverterUiState()
+
+        data object Nothing : ConverterUiState()
     }
 }

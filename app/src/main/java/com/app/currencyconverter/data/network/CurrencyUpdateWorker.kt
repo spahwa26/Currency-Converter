@@ -48,6 +48,5 @@ class CurrencyUpdateWorker @AssistedInject constructor(
             }
         }
 
-
     }
 }
