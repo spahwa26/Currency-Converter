@@ -1,10 +1,9 @@
 package com.app.currencyconverter.ui.converter
 
-import com.app.currencyconverter.data.models.CurrencyToShow
 import com.app.currencyconverter.data.repository.FakeRepository
 import com.app.shared_test_code.MainCoroutineRule
-import kotlinx.coroutines.Dispatchers
 import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -30,13 +29,6 @@ class ConverterViewmodelTest {
     fun setupViewModel() {
         // We initialise the tasks to 3, with one active and two completed
         repository = FakeRepository()
-        val curr1 = CurrencyToShow(code = "INR", countryName = "Indian Rupee", isSelected = false)
-        val curr2 = CurrencyToShow(code = "USD", countryName = "Doller", isSelected = false)
-        val curr3 =
-            CurrencyToShow(code = "AUD", countryName = "Australian Doller", isSelected = false)
-        val curr4 = CurrencyToShow(code = "AED", countryName = "Dinar", isSelected = false)
-
-        repository.addCurrencies(curr1, curr2, curr3, curr4)
 
         viewmodel = ConverterViewmodel(repository)
     }

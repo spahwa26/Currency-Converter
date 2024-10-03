@@ -66,9 +66,9 @@ fun SelectCurrenciesScreen(
     navController: NavController
 ) {
 
-    val snackbarHostState = remember { SnackbarHostState() }
-    val snackbarMessage = sharedViewModel.snackbarMessage.value
-    val message = snackbarMessage?.let { stringResource(id = it) }
+    val snackBarHostState = remember { SnackbarHostState() }
+    val snackBarMessage = sharedViewModel.snackBarMessage.value
+    val message = snackBarMessage?.let { stringResource(id = it) }
     val searchQuery by sharedViewModel.searchQuery.collectAsState()
     var itemWidth by remember { mutableStateOf(0.dp) }
     if (sharedViewModel.canPopBack.value) {
@@ -198,11 +198,11 @@ fun SelectCurrenciesScreen(
         }
 
         SnackbarHost(
-            hostState = snackbarHostState,
+            hostState = snackBarHostState,
             modifier = Modifier.align(Alignment.BottomCenter)
-        ) { snackbarData ->
+        ) { snackBarData ->
             Snackbar {
-                Text(snackbarData.visuals.message)
+                Text(snackBarData.visuals.message)
             }
         }
 
@@ -210,12 +210,12 @@ fun SelectCurrenciesScreen(
 
     LaunchedEffect(message) {
         message?.let {
-            snackbarHostState.showSnackbar(message)
-            sharedViewModel.snackbarShown()
+            snackBarHostState.showSnackbar(message)
+            sharedViewModel.snackBarShown()
         }
     }
     LaunchedEffect(Unit) {
-        sharedViewModel.getListFromDb()
+        sharedViewModel.updateDataFromDb()
     }
 }
 

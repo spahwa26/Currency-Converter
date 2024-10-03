@@ -3,10 +3,8 @@ package com.app.currencyconverter.data.repository
 import androidx.annotation.VisibleForTesting
 import com.app.currencyconverter.data.models.CurrenciesData
 import com.app.currencyconverter.data.models.CurrencyInfo
-import com.app.currencyconverter.data.models.CurrencyToShow
 import com.app.currencyconverter.utils.ResultWrapper
 import com.app.currencyconverter.utils.localizedException
-import kotlinx.coroutines.runBlocking
 
 class FakeRepository : CurrencyRepository {
 
@@ -14,7 +12,7 @@ class FakeRepository : CurrencyRepository {
 
     private var shouldCallApi = false
 
-    private var currenciesToShowData = mutableListOf<CurrencyToShow>()
+    private var currenciesToShowData = mutableListOf<CurrencyInfo>()
 
     fun shouldShowError(){
         shouldReturnError=true
@@ -30,7 +28,7 @@ class FakeRepository : CurrencyRepository {
     }
 
     override suspend fun getCurrencyList(): List<CurrencyInfo> {
-        return emptyList()
+        return currenciesToShowData
     }
 
     override suspend fun getShowCurrenciesList(): List<CurrencyInfo> {
@@ -64,7 +62,7 @@ class FakeRepository : CurrencyRepository {
 
     //todo: remove is not in use
     @VisibleForTesting
-    fun addCurrencies(vararg tasks: CurrencyToShow) {
+    fun addCurrencies(vararg tasks: CurrencyInfo) {
         for (task in tasks) {
             currenciesToShowData.add(task)
         }
