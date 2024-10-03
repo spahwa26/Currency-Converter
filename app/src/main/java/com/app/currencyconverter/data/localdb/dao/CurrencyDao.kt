@@ -23,6 +23,10 @@ interface CurrencyDao {
     @Query("UPDATE CurrenciesData SET update_count = :count WHERE row_id = 0")
     suspend fun updateCountInRatesTable(count: Int)
 
+    /**
+     * I could have received data in Flow or LiveData but the results will not change very frequently
+     * and it's a calculator app basically so the user will not stay on it continuously
+     * */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertCurrenciesInfo(currencyInfo: List<CurrencyInfo>)
 

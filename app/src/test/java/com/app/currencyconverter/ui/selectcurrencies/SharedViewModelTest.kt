@@ -2,7 +2,7 @@ package com.app.currencyconverter.ui.selectcurrencies
 
 import com.app.currencyconverter.data.models.CurrencyInfo
 import com.app.currencyconverter.data.repository.FakeRepository
-import com.app.shared_test_code.MainCoroutineRule
+import com.app.currencyconverter.MainCoroutineRule
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

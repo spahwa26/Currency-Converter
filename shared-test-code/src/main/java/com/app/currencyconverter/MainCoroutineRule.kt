@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.app.shared_test_code
+package com.app.currencyconverter
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

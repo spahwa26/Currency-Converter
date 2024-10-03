@@ -30,6 +30,10 @@ class DefaultCurrencyRepository  @Inject constructor(
                             when (dataRes) {
                                 is ResultWrapper.Success -> {
                                     database.currencyDao().insertCurrenciesRates(ratesRes.data)
+                                    /**
+                                     * the reason behind below API call is to enable search by currency
+                                     * name because everyone will not remember the currency code
+                                    */
                                     database.currencyDao().insertCurrenciesInfo(dataRes.data.map {
                                         CurrencyInfo(it.key, it.value)
                                     })

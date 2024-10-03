@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.app.shared_test_code"
+    namespace = "com.app.currencyconverter"
     compileSdk = 34
 
     defaultConfig {
@@ -34,7 +34,7 @@ android {
 
 dependencies {
 
-    testImplementation(project(":app"))
+    implementation(project(":app"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -42,4 +42,5 @@ dependencies {
     implementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    implementation(libs.retrofit.api)
 }
