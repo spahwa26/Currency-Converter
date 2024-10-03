@@ -9,7 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.app.currencyconverter.R
 import com.app.currencyconverter.data.models.CurrencyInfo
 import com.app.currencyconverter.data.models.CurrencyToShow
-import com.app.currencyconverter.data.repository.LocalRepository
+import com.app.currencyconverter.data.repository.CurrencyRepository
 import com.app.currencyconverter.utils.Constants.EMPTY_STRING
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers.IO
@@ -28,7 +28,7 @@ import javax.inject.Inject
 @Suppress("OPT_IN_USAGE", "SameParameterValue")
 @HiltViewModel
 class SharedViewModel @Inject constructor(
-    private val localRepository: LocalRepository,
+    private val repository: CurrencyRepository,
 ) : ViewModel() {
 
     private var currencyListMain: List<CurrencyToShow> = emptyList()
@@ -76,7 +76,7 @@ class SharedViewModel @Inject constructor(
         selectionMap.clear()
         viewModelScope.launch {
             withContext(IO) {
-                currencyListMain = localRepository.getCurrencyList().map {
+                currencyListMain = repository.getCurrencyList().map {
                     if (it.isSelected) {
                         selectionMap[it.code] = true
                     }
@@ -133,7 +133,7 @@ class SharedViewModel @Inject constructor(
     }
 
     fun onBaseCurrencyChanged(currency: String) {
-        localRepository.setBaseCurrency(currency)
+        repository.setBaseCurrency(currency)
         _baseCurrency.value = currency
     }
 
@@ -178,7 +178,7 @@ class SharedViewModel @Inject constructor(
             else {
                 if (canUpdateDB) {
                     currencyListMain.forEach { item ->
-                        localRepository.updateCurrencyInfo(
+                        repository.updateCurrencyInfo(
                             CurrencyInfo(
                                 item.code, item.countryName, selectionMap[item.code] == true
                             )

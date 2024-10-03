@@ -1,0 +1,3 @@
+package com.app.currencyconverter.data.repository
+
+class DefaultCurrencyRepositoryTest

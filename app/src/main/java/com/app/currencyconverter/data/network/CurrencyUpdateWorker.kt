@@ -4,8 +4,7 @@ import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.app.currencyconverter.data.repository.LocalRepository
-import com.app.currencyconverter.data.repository.RemoteRepository
+import com.app.currencyconverter.data.repository.DefaultCurrencyRepository
 import com.app.currencyconverter.utils.ResultWrapper
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -14,13 +13,12 @@ import dagger.assisted.AssistedInject
 class CurrencyUpdateWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
-    private val remoteRepository: RemoteRepository,
-    private val localRepository: LocalRepository,
+    private val repository: DefaultCurrencyRepository
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
 
-        var updatesCount = localRepository.getUpdatesCount()
+        var updatesCount = repository.getUpdatesCount()
 
         /*
          * This implementation calls the currency names API every 1-2 months, depending on network availability.
@@ -31,15 +29,15 @@ class CurrencyUpdateWorker @AssistedInject constructor(
         val res =
             if ((updatesCount ?: 0) >= 720) {
                 updatesCount = 1
-                remoteRepository.updateCurrencyData()
+                repository.updateCurrencyData()
             } else {
                 updatesCount = (updatesCount ?: 0) + 1
-                remoteRepository.updateCurrencyData(false)
+                repository.updateCurrencyData(false)
             }
 
         return when (res) {
             is ResultWrapper.Success -> {
-                localRepository.updateTheCount(updatesCount)
+                repository.updateTheCount(updatesCount)
                 Result.success()
             }
 

@@ -99,7 +99,7 @@ fun ConverterScreen(
                 TextField(
                     value = amount,
                     onValueChange = {
-                        if (!mainViewModel.validateAmount(it))
+                        if (!mainViewModel.isValidAmount(it))
                             return@TextField
                         if (it.isNotBlank() && it != "." && it.toDouble() != 0.0)
                             mainViewModel.updateAmount(it)

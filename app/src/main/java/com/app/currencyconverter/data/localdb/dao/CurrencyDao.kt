@@ -21,7 +21,7 @@ interface CurrencyDao {
     suspend fun getUpdatesCount(): Int?
 
     @Query("UPDATE CurrenciesData SET update_count = :count WHERE row_id = 0")
-    suspend fun updateCountInRatesTable(count: Int): Int?
+    suspend fun updateCountInRatesTable(count: Int)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertCurrenciesInfo(currencyInfo: List<CurrencyInfo>)

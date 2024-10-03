@@ -10,25 +10,21 @@ import com.app.currencyconverter.R
 import com.app.currencyconverter.data.models.CurrenciesData
 import com.app.currencyconverter.data.models.CurrencyInfo
 import com.app.currencyconverter.data.models.CurrencyToShow
-import com.app.currencyconverter.data.repository.LocalRepository
-import com.app.currencyconverter.data.repository.RemoteRepository
+import com.app.currencyconverter.data.repository.CurrencyRepository
 import com.app.currencyconverter.utils.Constants.AMOUNT_REGEX
 import com.app.currencyconverter.utils.Constants.EMPTY_STRING
 import com.app.currencyconverter.utils.NoInternetException
 import com.app.currencyconverter.utils.ResultWrapper
 import com.app.currencyconverter.utils.SomethingWentWrongException
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
 class ConverterViewmodel @Inject constructor(
-    private val remoteRepository: RemoteRepository,
-    private val localRepository: LocalRepository,
+    private val repository: CurrencyRepository,
 ) :
     ViewModel() {
 
@@ -41,13 +37,52 @@ class ConverterViewmodel @Inject constructor(
     private val _amountText = MutableStateFlow(EMPTY_STRING)
     val amountText = _amountText.asStateFlow()
 
-    var baseCurrency: String = localRepository.getBaseCurrency()
+    var baseCurrency: String = repository.getBaseCurrency()
 
     private var currencyList: List<CurrencyInfo>? = null
 
     private var currencyRates: CurrenciesData? = null
 
     val convertedCurrenciesList = MutableStateFlow<List<CurrencyToShow>>(emptyList())
+
+
+
+    fun updateLists(callAPI: Boolean = false) {
+        viewModelScope.launch {
+                currencyList = repository.getShowCurrenciesList()
+                currencyRates = repository.getCurrencyRates()
+                if ((currencyList.isNullOrEmpty() || currencyRates == null) && callAPI) {
+                    callConverterAPI()
+                }
+                else {
+                    updateAmount(EMPTY_STRING)
+                }
+        }
+    }
+
+    private fun callConverterAPI() {
+        _converterUiState.value = ConverterUiState.Loading
+        viewModelScope.launch {
+            when (val res = repository.updateCurrencyData()) {
+                is ResultWrapper.Success -> {
+                    _converterUiState.value = ConverterUiState.Success
+                    updateLists()
+                }
+
+                is ResultWrapper.Error -> {
+                    _converterUiState.value =
+                        when (res.exception) {
+                            is NoInternetException -> ConverterUiState.Error(customError = R.string.no_internet_error)
+                            is SomethingWentWrongException -> ConverterUiState.Error(customError = R.string.something_went_wrong)
+                            else -> ConverterUiState.Error(
+                                res.exception.localizedMessage ?: EMPTY_STRING
+                            )
+                        }
+
+                }
+            }
+        }
+    }
 
     fun updateAmount(sAmount: String = amountText.value) {
         _amountText.value = sAmount
@@ -73,58 +108,21 @@ class ConverterViewmodel @Inject constructor(
         }
     }
 
-    private fun callConverterAPI() {
-        _converterUiState.value = ConverterUiState.Loading
-        viewModelScope.launch {
-            when (val res = remoteRepository.updateCurrencyData()) {
-                is ResultWrapper.Success -> {
-                    _converterUiState.value = ConverterUiState.Success
-                    updateLists()
-                }
-
-                is ResultWrapper.Error -> {
-                    _converterUiState.value =
-                        when (res.exception) {
-                            is NoInternetException -> ConverterUiState.Error(customError = R.string.no_internet_error)
-                            is SomethingWentWrongException -> ConverterUiState.Error(customError = R.string.something_went_wrong)
-                            else -> ConverterUiState.Error(
-                                res.exception.localizedMessage ?: EMPTY_STRING,
-                                R.string.something_went_wrong
-                            )
-                        }
-
-                }
-            }
-        }
-    }
 
     fun hideAlert() {
         _converterUiState.value = ConverterUiState.Nothing
     }
 
-    fun updateLists(callAPI: Boolean = false) {
-        viewModelScope.launch {
-            withContext(IO) {
-                currencyList = localRepository.getShowCurrenciesList()
-                currencyRates = localRepository.getCurrencyRates()
-                if ((currencyList.isNullOrEmpty() || currencyRates == null) && callAPI)
-                    callConverterAPI()
-                else {
-                    updateAmount(EMPTY_STRING)
-                }
-            }
-        }
-    }
-
-    fun validateAmount(input: String): Boolean {
-        return regex.matches(input) || input.isEmpty()
+    // Allowing blank and . value to pass through because, on blank value the conversion is returning 0 which is required
+    fun isValidAmount(input: String): Boolean {
+        return (regex.matches(input) && input.length<=12) || input.isBlank()
     }
 
 
     sealed class ConverterUiState {
         data object Loading : ConverterUiState()
         data object Success : ConverterUiState()
-        data class Error(val apiError: String? = null, @StringRes val customError: Int) :
+        data class Error(val apiError: String? = null, @StringRes val customError: Int = R.string.something_went_wrong) :
             ConverterUiState()
 
         data object Nothing : ConverterUiState()
