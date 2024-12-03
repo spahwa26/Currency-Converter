@@ -13,13 +13,17 @@ A modern, efficient currency conversion application built with cutting-edge Andr
 
 ## 📱 App Screenshots
 
-<img src="screenshots/main.png" width="200"/> 
 *Main Screen: Currency Conversion Interface*
+<p align="center">
+  <img src="screenshots/main.png" width="200"/> 
+</p>
+
+
+*Currency Selection Screen*
 <p align="center">
   <img src="screenshots/currency_selector.png" width="200"/> 
   <img src="screenshots/currency_selector_2.png" width="200"/> 
 </p>
-*Currency Selection Screen*
 
 ## ✨ Features
 
@@ -91,7 +95,7 @@ A modern, efficient currency conversion application built with cutting-edge Andr
 
 ### Setup Steps
 1. Clone the repository
-2. Add API key in `local.properties`
+2. Add API key in `native-lib.cpp`
 3. Sync Gradle
 4. Run the application
 
@@ -108,12 +112,6 @@ OPEN_EXCHANGE_RATES_API_KEY=your_api_key_here
 3. Commit changes
 4. Push to the branch
 5. Create pull request
-
-## 📄 License
-[Specify your license]
-
-## 👥 Developed By
-[Your Name/Organization]
 
 ## 📞 Support
 For issues, feature requests, please open a GitHub issue.
